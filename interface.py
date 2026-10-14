@@ -4,6 +4,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from structs import TCB
 from utils import validar_configuracao
+from simulator import Simulador
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------
 # INTERFACE GRÁFICA E POP-UPS
@@ -30,8 +31,10 @@ def start_interface():
     app = ctk.CTk()
     app.title("Simulador visual de sistema operacional")
     app.geometry("500x400")
+    simulador = None
 
     def abrir_seletor_de_arquivo():
+        nonlocal simulador
         caminho_selecionado = filedialog.askopenfilename(
             title="Selecione o arquivo de configuração",
             filetypes=[("Arquivos de Texto", "*.txt"), ("Todos os Arquivos", "*.*")]
@@ -66,8 +69,10 @@ def start_interface():
                             lista_eventos=v_lista
                         )
                         tcbs_do_sistema.append(novo_tcb)
+                    
+                    
 
-                    # Atualiza a interface
+                    simulador = Simulador(tcbs_do_sistema)# Atualiza a interface
                     mensagem_sucesso = (f"Arquivo: {Path(caminho_selecionado).name}\n"
                                         f"Algoritmo: {algoritmo.upper()} | Quantum: {quantum}\n"
                                         f"Tarefas carregadas: {len(tcbs_do_sistema)}")
@@ -96,4 +101,34 @@ def start_interface():
     label_status = ctk.CTkLabel(app, text="Aguardando arquivo...", justify="center")
     label_status.pack(pady=20)
 
+    def avancar_simulacao():
+        if simulador is None:
+            mostrar_alerta_erro(app, "Carregue um arquivo primeiro.")
+            return
+    
+        simulador.avancar_tick()
+    
+        label_tick.configure(
+            text=f"Tick atual: {simulador.tempo_global}"
+        )
+    
+        if simulador.finalizado:
+            label_status.configure(
+                text="Simulação finalizada!",
+                text_color="#55FF55"
+            )
+
+
+    btn_avancar = ctk.CTkButton(
+        app,
+        text="Avançar Tick",
+        command=avancar_simulacao
+    )
+    btn_avancar.pack(pady=10)
+
+    label_tick = ctk.CTkLabel(
+        app,
+        text="Tick atual: 0"
+    )
+    label_tick.pack(pady=10)
     app.mainloop()
