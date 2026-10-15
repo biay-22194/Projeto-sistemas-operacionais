@@ -1,0 +1,2 @@
+algORitmo_escalonamento;quantum;qtde_cpus
+id; cOr; 1; 2; 6; 3; lista_eventos

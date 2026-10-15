@@ -70,7 +70,6 @@ def start_interface():
                         )
                         tcbs_do_sistema.append(novo_tcb)
                     
-                    
 
                     simulador = Simulador(tcbs_do_sistema)# Atualiza a interface
                     mensagem_sucesso = (f"Arquivo: {Path(caminho_selecionado).name}\n"

@@ -1,0 +1,47 @@
+
+    # Input de informações
+
+    frame = CTkFrame(master=app, width=200, height=200, fg_color="#162222")
+    frame.pack(expand=True)
+
+    def click_handler():
+
+        print(f"Entered value: {entry.get()}")
+
+
+    label_frame = CTkLabel (master=frame, text="Configurações das tarefas", font=("Arial", 20, "bold"))
+    label_frame.pack (expand=True, pady=10)
+
+    # Input do ID
+    label_id = CTkLabel (master=frame, text="Identificador da tarefa:", font=("Arial", 15))
+    label_id.pack (expand=True, pady=10)
+    entry_id = CTkEntry(master=frame, placeholder_text="Digite...", width=300, text_color="#FBFFFF")
+    entry_id.pack(expand=True, pady=10)
+
+    label_cor = CTkLabel (master=frame, text="Cor da tarefa:", font=("Arial", 15))
+    label_cor.pack (expand=True, pady=10)
+    entry_cor = CTkEntry(master=frame, placeholder_text="Digite...", width=300, text_color="#FBFFFF")
+    entry_cor.pack(expand=True, pady=10)
+
+    label_ingresso = CTkLabel (master=frame, text="Ingresso da tarefa:", font=("Arial", 15))
+    label_ingresso.pack (expand=True, pady=10)
+    entry_ingresso = CTkEntry(master=frame, placeholder_text="Digite...", width=300, text_color="#FBFFFF")
+    entry_ingresso.pack(expand=True, pady=10)
+
+    label_duracao = CTkLabel (master=frame, text="Duração da tarefa:", font=("Arial", 15))
+    label_duracao.pack (expand=True, pady=10)
+    entry_duracao = CTkEntry(master=frame, placeholder_text="Digite...", width=300, text_color="#FBFFFF")
+    entry_duracao.pack(expand=True, pady=10)
+
+    label_periodo = CTkLabel (master=frame, text="Período da tarefa:", font=("Arial", 15))
+    label_periodo.pack (expand=True, pady=10)
+    entry_periodo = CTkEntry(master=frame, placeholder_text="Digite...", width=300, text_color="#FBFFFF")
+    entry_periodo.pack(expand=True, pady=10)
+
+    label_prazo = CTkLabel (master=frame, text="Prazo da tarefa:", font=("Arial", 15))
+    label_prazo.pack (expand=True, pady=10)
+    entry_prazo = CTkEntry(master=frame, placeholder_text="Digite...", width=300, text_color="#FBFFFF")
+    entry_prazo.pack(expand=True, pady=10)
+
+    btn_frame = CTkButton (master=frame, text="Enviar", command=click_handler)
+    btn_frame.pack(expand=True, pady=10)
