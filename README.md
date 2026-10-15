@@ -15,3 +15,5 @@ Criei um escalonador provisório que seleciona a primeira tarefa disponível.
 Integrei o simulador à interface gráfica, adicionando o botão Avançar Tick e o contador de tempo.
 
 Status: a implementação está pronta e a interface abre normalmente, mas ainda falta testar a execução com um arquivo de configuração.
+
+Dia 3 - implementei os métodos de escalonamento rate monotonic e earliest deadline first, tive que mudar no simulador na parte de quantum. Não fiz a mudança de selecionar o algoritmo sem alterar o motor da simulação, vou fazer no meu próximo dia.
