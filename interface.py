@@ -2,7 +2,7 @@ import customtkinter as ctk
 from tkinter import filedialog
 from pathlib import Path
 from dataclasses import dataclass, field
-from structs import TCB
+from structs import TCB, RateMonotonic, EarliestDeadlineFirst
 from utils import validar_configuracao
 from simulator import Simulador
 
@@ -51,6 +51,19 @@ def start_interface():
                 try:
                     # Desempacota as variáveis do SO
                     algoritmo, quantum, qtde_cpus = config_so
+                    # Converte os valores do arquivo para inteiros
+                    quantum = int(quantum)
+                    qtde_cpus = int(qtde_cpus)
+
+                    # Escolhe o algoritmo de escalonamento
+                    if algoritmo == "rm":
+                        escalonador = RateMonotonic(quantum=quantum)
+
+                    elif algoritmo == "edf":
+                        escalonador = EarliestDeadlineFirst(quantum=quantum)
+
+                    else:
+                        raise ValueError("Algoritmo de escalonamento inválido.")
                     
                     # Cria as TCBs para o sistema
                     tcbs_do_sistema = []
@@ -71,7 +84,7 @@ def start_interface():
                         tcbs_do_sistema.append(novo_tcb)
                     
 
-                    simulador = Simulador(tcbs_do_sistema)# Atualiza a interface
+                    simulador = Simulador(tarefas=tcbs_do_sistema, algoritmo=escalonador, qtde_cpus=qtde_cpus)
                     mensagem_sucesso = (f"Arquivo: {Path(caminho_selecionado).name}\n"
                                         f"Algoritmo: {algoritmo.upper()} | Quantum: {quantum}\n"
                                         f"Tarefas carregadas: {len(tcbs_do_sistema)}")

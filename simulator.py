@@ -13,17 +13,22 @@ class Ocorrencia:
 
 class Simulador:
 
-    def __init__(self, tarefas: list, algoritmo):
+    def __init__(self, tarefas: list, algoritmo, qtde_cpus: int = 1):
         self.tempo_global = 0
         self.tarefas = tarefas
         self.algoritmo = algoritmo
         self.ocorrencias = []
         self.finalizado = False
         
-        # Gestão de 1 CPU
-        self.cpu = None
-        self.tempo_desligado = 0  # Registra a ociosidade do processador
-        self.tempo_no_quantum = 0
+        
+        if qtde_cpus < 1:
+            raise ValueError("A quantidade de CPUs deve ser maior que zero.")
+        
+        self.qtde_cpus = qtde_cpus
+
+        self.cpus = [None] * self.qtde_cpus
+        self.tempo_desligado = [0] * self.qtde_cpus
+        self.tempo_no_quantum = [0] * self.qtde_cpus
 
         self.ativacoes = {t.id: 0 for t in tarefas}
 
@@ -65,58 +70,119 @@ class Simulador:
                 print(f"  Tarefa {tarefa.id}: ativação {quantidade + 1}/10")
 
     def escalonar(self):
-        # Seleciona ocorrências em estado Pronta ou Executando
+
         aptas = [
             o for o in self.ocorrencias
             if o.estado in ("Pronta", "Executando")
         ]
 
-        if not aptas:
-            if self.cpu is not None and self.cpu.estado == "Executando":
-                self.cpu.estado = "Pronta"
-            self.cpu = None
-            self.tempo_no_quantum = 0
-            return
+        # Seleciona as ocorrências prioritárias
+        selecionadas = []
+        
+        while aptas and len(selecionadas) < self.qtde_cpus:
+        
+            proxima = self.algoritmo.selecionar_proxima(
+                aptas,
+                None
+            )
+        
+            selecionadas.append(proxima)
+            aptas.remove(proxima)
+        
+        # Prepara a distribuição entre as CPUs
+        novas_cpus = [None] * self.qtde_cpus
+        
+        # Mantém as ocorrências nas CPUs onde já estavam
+        for i in range(self.qtde_cpus):
+        
+            ocorrencia_atual = self.cpus[i]
+        
+            if any(o is ocorrencia_atual for o in selecionadas):
+                novas_cpus[i] = ocorrencia_atual
+                selecionadas = [
+                    o for o in selecionadas
+                    if o is not ocorrencia_atual
+                ]
+        
+        # Distribui as ocorrências restantes
+        for i in range(self.qtde_cpus):
+        
+            if novas_cpus[i] is None and selecionadas:
+                novas_cpus[i] = selecionadas.pop(0)
 
-        # Pede ao algoritmo a próxima tarefa respeitando os 5 critérios de desempate
-        proxima = self.algoritmo.selecionar_proxima(aptas, self.cpu)
+        for ocorrencia in self.ocorrencias:
+            if ocorrencia.estado == "Executando":
+                ocorrencia.estado = "Pronta"
 
-        # Trata preempção / troca de contexto
-        if self.cpu != proxima:
-            if self.cpu is not None and self.cpu.estado == "Executando":
-                self.cpu.estado = "Pronta"
-            self.tempo_no_quantum = 0
+        for ocorrencia in novas_cpus:
+            if ocorrencia is not None:
+                ocorrencia.estado = "Executando"
 
-        self.cpu = proxima
-        self.cpu.estado = "Executando"
+        # Verifica se alguma CPU mudou de tarefa
+        for i in range(self.qtde_cpus):
+
+            tarefa_anterior = self.cpus[i]
+            nova_tarefa = novas_cpus[i]
+
+            if tarefa_anterior is not nova_tarefa:
+                self.tempo_no_quantum[i] = 0
+
+        # Atualiza as CPUs
+        self.cpus = novas_cpus
 
     def executar(self):
-        if self.cpu is None:
-            self.tempo_desligado += 1
-            print(f"  CPU desligada: nenhuma tarefa pronta. (Ociosa por {self.tempo_desligado} ticks)")
-            self.tempo_no_quantum = 0
-            return
 
-        ocorrencia = self.cpu
-        print(f"  CPU executando tarefa {ocorrencia.tarefa.id} (ativação {ocorrencia.numero})")
+        for i in range(self.qtde_cpus):
 
-        ocorrencia.tempo_restante -= 1
-        ocorrencia.tarefa.tempo_execucao += 1
-        self.tempo_no_quantum += 1
+            ocorrencia = self.cpus[i]
 
-        # Caso A: Conclusão da ocorrência
-        if ocorrencia.tempo_restante <= 0:
-            ocorrencia.estado = "Concluída"
-            print(f"  Tarefa {ocorrencia.tarefa.id}: ativação {ocorrencia.numero} concluída.")
-            self.tempo_no_quantum = 0
-            self.cpu = None
+            # CPU ociosa
+            if ocorrencia is None:
+                self.tempo_desligado[i] += 1
+                self.tempo_no_quantum[i] = 0
 
-        # Caso B: Esgotamento do quantum (se houver quantum definido)
-        elif self.algoritmo.quantum is not None and self.tempo_no_quantum >= self.algoritmo.quantum:
-            ocorrencia.estado = "Pronta"
-            print(f"  Quantum de {self.algoritmo.quantum} ticks atingido para tarefa {ocorrencia.tarefa.id}.")
-            self.tempo_no_quantum = 0
-            self.cpu = None
+                print(f"CPU {i}: ociosa")
+                continue
+
+            # CPU executando uma tarefa
+            print(
+                f"CPU {i}: executando tarefa "
+                f"{ocorrencia.tarefa.id}"
+            )
+
+            ocorrencia.tempo_restante -= 1
+            ocorrencia.tarefa.tempo_execucao += 1
+            self.tempo_no_quantum[i] += 1
+
+            # Tarefa concluída
+            if ocorrencia.tempo_restante <= 0:
+
+                ocorrencia.estado = "Concluída"
+
+                print(
+                    f"CPU {i}: tarefa "
+                    f"{ocorrencia.tarefa.id} concluída"
+                )
+
+                self.cpus[i] = None
+                self.tempo_no_quantum[i] = 0
+
+            # Quantum esgotado
+            elif (
+                self.algoritmo.quantum is not None
+                and self.tempo_no_quantum[i] >= self.algoritmo.quantum
+            ):
+
+                ocorrencia.estado = "Pronta"
+
+                print(
+                    f"CPU {i}: quantum esgotado para "
+                    f"{ocorrencia.tarefa.id}"
+                )
+
+                self.cpus[i] = None
+                self.tempo_no_quantum[i] = 0
+      
 
     def atualizar_estados(self):
         for tarefa in self.tarefas:
@@ -153,12 +219,25 @@ class Simulador:
 
     def verificar_fim(self):
         validas = [t for t in self.tarefas if t.periodo > 0]
-        todas_ativadas = all(self.ativacoes[t.id] == 10 for t in validas)
-        todas_concluidas = all(o.estado == "Concluída" for o in self.ocorrencias)
+
+        todas_ativadas = all(
+            self.ativacoes[t.id] == 10 for t in validas
+        )
+
+        todas_concluidas = all(
+            o.estado == "Concluída" for o in self.ocorrencias
+        )
 
         if todas_ativadas and todas_concluidas:
             self.finalizado = True
-            print(f"\nSimulação finalizada! Tempo total ocioso da CPU: {self.tempo_desligado} ticks.")
+
+            print("\nSimulação finalizada!")
+
+            for i in range(self.qtde_cpus):
+                print(
+                    f"CPU {i}: "
+                    f"{self.tempo_desligado[i]} ticks ociosos"
+                )
 
     def avancar_tick(self):
         if self.finalizado:
