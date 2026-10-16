@@ -17,3 +17,7 @@ Integrei o simulador à interface gráfica, adicionando o botão Avançar Tick e
 Status: a implementação está pronta e a interface abre normalmente, mas ainda falta testar a execução com um arquivo de configuração.
 
 Dia 3 - implementei os métodos de escalonamento rate monotonic e earliest deadline first, tive que mudar no simulador na parte de quantum. Não fiz a mudança de selecionar o algoritmo sem alterar o motor da simulação, vou fazer no meu próximo dia.
+
+
+Dia 4 — Múltiplas CPUs
+Implementei o suporte a múltiplas CPUs, adaptando o escalonamento e a execução simultânea de tarefas. Adicionei controle individual de quantum e ociosidade, preempção e redução de migrações desnecessárias. Integrei as configurações à interface e realizei testes com RM, EDF e finalização automática, todos com resultados esperados.
