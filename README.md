@@ -21,3 +21,6 @@ Dia 3 - implementei os métodos de escalonamento rate monotonic e earliest deadl
 
 Dia 4 — Múltiplas CPUs
 Implementei o suporte a múltiplas CPUs, adaptando o escalonamento e a execução simultânea de tarefas. Adicionei controle individual de quantum e ociosidade, preempção e redução de migrações desnecessárias. Integrei as configurações à interface e realizei testes com RM, EDF e finalização automática, todos com resultados esperados.
+
+
+Dia 5 - foi implementado a parte de modificação das características das tarefas/do simulador na interface, com mensagens de erro. Não testei muito a fundo, mas creio que a parte de "Integrar os controles da interface com o simulador" esteja funcionando (?)
