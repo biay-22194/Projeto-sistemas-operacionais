@@ -24,3 +24,6 @@ Implementei o suporte a múltiplas CPUs, adaptando o escalonamento e a execuçã
 
 
 Dia 5 - foi implementado a parte de modificação das características das tarefas/do simulador na interface, com mensagens de erro. Não testei muito a fundo, mas creio que a parte de "Integrar os controles da interface com o simulador" esteja funcionando (?)
+
+**Dia 6 — Gráfico de Gantt:** Foi implementado o gráfico de Gantt utilizando o Canvas do Tkinter, integrado à interface do simulador. Adicionei o registro do histórico de execução das tarefas, identificação das CPUs, diferenciação visual dos estados (Pronta, Executando e Bloqueada), eventos de chegada, conclusão e perda de prazo, além de uma legenda e organização das tarefas por ID. Realizei testes com múltiplas CPUs, perda de prazo e bloqueio de tarefas, todos funcionando corretamente.
+**Obs.:** Acredito que o gráfico também funcione em simulações mais longas, mas não tive tempo de testar. Seria interessante realizar esse teste para verificar se a visualização continua correta com muitos ticks e se será necessário adicionar rolagem horizontal.
