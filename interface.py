@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from gantt import GraficoGantt
 from CTkTable import CTkTable
 from tkinter import filedialog
 from pathlib import Path
@@ -368,12 +369,19 @@ def start_interface():
             return
     
         simulador.avancar_tick()
+        grafico_gantt.desenhar_eixos(
+            tcbs_do_sistema,
+            simulador.tempo_global
+)
         label_tick.configure(text=f"Tick atual: {simulador.tempo_global}")
         atualizar_tabela_so()
         atualizar_tabela_tarefas()
     
         if getattr(simulador, 'finalizado', False):
             label_status.configure(text="Simulação finalizada!", text_color="#55FF55")
+
+        print("Histórico:", simulador.historico)
+        print("Eventos Gantt:", simulador.eventos_gantt)
 
     # -------------------------------------------------------------------------
     # LAYOUT DA INTERFACE
@@ -468,6 +476,21 @@ def start_interface():
     frame_tabela_tarefas_container = ctk.CTkScrollableFrame(painel_direito)
     frame_tabela_tarefas_container.pack(fill="both", expand=True, padx=10, pady=5)
 
+    # Área do gráfico de Gantt
+    lbl_gantt = ctk.CTkLabel(
+        painel_direito,
+        text="Gráfico de Gantt",
+        font=("Arial", 16, "bold")
+    )
+    lbl_gantt.pack(pady=(10, 5))
+
+    grafico_gantt = GraficoGantt(painel_direito)
+    grafico_gantt.pack(
+        fill="both",
+        expand=True,
+        padx=10,
+        pady=5
+    )
     frame_controle = ctk.CTkFrame(painel_direito, fg_color="transparent")
     frame_controle.pack(fill="x", pady=10)
 

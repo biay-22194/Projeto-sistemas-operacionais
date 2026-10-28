@@ -19,8 +19,9 @@ class Simulador:
         self.algoritmo = algoritmo
         self.ocorrencias = []
         self.finalizado = False
-        
-        
+        self.historico = []               #armazena os estados durante cada tick
+        self.eventos_gantt = []           #armazena acontecimentos pontuais
+
         if qtde_cpus < 1:
             raise ValueError("A quantidade de CPUs deve ser maior que zero.")
         
@@ -67,6 +68,14 @@ class Simulador:
                 )
                 self.ocorrencias.append(ocorrencia)
                 self.ativacoes[tarefa.id] += 1
+
+                self.eventos_gantt.append({                  #quando uma nova ocorrência é ativada, registramos sua chegada
+                    "tempo": self.tempo_global,
+                    "tarefa": tarefa.id,
+                    "ocorrencia": ocorrencia.numero,
+                    "tipo": "Chegada"
+                })
+
                 print(f"  Tarefa {tarefa.id}: ativação {quantidade + 1}/10")
 
     def escalonar(self):
@@ -150,6 +159,14 @@ class Simulador:
                 f"{ocorrencia.tarefa.id}"
             )
 
+            self.historico.append({
+            "tempo": self.tempo_global,
+            "cpu": i,
+            "tarefa": ocorrencia.tarefa.id,
+            "ocorrencia": ocorrencia.numero,
+            "estado": "Executando"
+            })
+
             ocorrencia.tempo_restante -= 1
             ocorrencia.tarefa.tempo_execucao += 1
             self.tempo_no_quantum[i] += 1
@@ -158,6 +175,12 @@ class Simulador:
             if ocorrencia.tempo_restante <= 0:
 
                 ocorrencia.estado = "Concluída"
+                self.eventos_gantt.append({
+               "tempo": self.tempo_global + 1,
+               "tarefa": ocorrencia.tarefa.id,
+               "ocorrencia": ocorrencia.numero,
+               "tipo": "Conclusão"
+               })
 
                 print(
                     f"CPU {i}: tarefa "
@@ -215,6 +238,13 @@ class Simulador:
                 and self.tempo_global >= ocorrencia.prazo_absoluto
             ):
                 ocorrencia.perdeu_prazo = True
+                self.eventos_gantt.append({
+               "tempo": self.tempo_global,
+               "tarefa": ocorrencia.tarefa.id,
+               "ocorrencia": ocorrencia.numero,
+               "tipo": "Perda de prazo"
+                })               
+                
                 print(f"  PRAZO PERDIDO: tarefa {ocorrencia.tarefa.id}, ativação {ocorrencia.numero}")
 
     def verificar_fim(self):
@@ -248,6 +278,16 @@ class Simulador:
 
         self.ativar_tarefas()
         self.escalonar()
+        for ocorrencia in self.ocorrencias:
+            if ocorrencia.estado in ("Pronta", "Bloqueada"):
+                self.historico.append({
+                    "tempo": self.tempo_global,
+                    "cpu": None,
+                    "tarefa": ocorrencia.tarefa.id,
+                    "ocorrencia": ocorrencia.numero,
+                    "estado": ocorrencia.estado
+                })
+
         self.executar()
 
         self.tempo_global += 1
