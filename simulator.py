@@ -223,8 +223,13 @@ class Simulador:
             if pendentes:
                 if any(o.estado == "Executando" for o in pendentes):
                     tarefa.estado = "Executando"
-                else:
+
+                elif any(o.estado == "Pronta" for o in pendentes):
                     tarefa.estado = "Pronta"
+
+                elif all(o.estado == "Bloqueada" for o in pendentes):
+                    tarefa.estado = "Bloqueada"
+             
             elif self.ativacoes[tarefa.id] == 10:
                 tarefa.estado = "Concluída"
             else:

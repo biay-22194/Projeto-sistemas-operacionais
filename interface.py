@@ -372,7 +372,24 @@ def start_interface():
         grafico_gantt.desenhar_eixos(
             tcbs_do_sistema,
             simulador.tempo_global
+        )
+
+        grafico_gantt.desenhar_execucoes(
+            tcbs_do_sistema,
+            simulador.historico
+        )
+
+        grafico_gantt.desenhar_estados(
+            tcbs_do_sistema,
+            simulador.historico
+        )
+
+        grafico_gantt.desenhar_eventos(
+            tcbs_do_sistema,
+            simulador.eventos_gantt
 )
+        grafico_gantt.desenhar_legenda()       
+
         label_tick.configure(text=f"Tick atual: {simulador.tempo_global}")
         atualizar_tabela_so()
         atualizar_tabela_tarefas()
