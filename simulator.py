@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import copy
 
 @dataclass
 class Ocorrencia:
@@ -21,6 +22,8 @@ class Simulador:
         self.finalizado = False
         self.historico = []               #armazena os estados durante cada tick
         self.eventos_gantt = []           #armazena acontecimentos pontuais
+        self.snapshots = [] # Armazena o estado completo de cada tick
+        self.salvar_estado() # Salva o estado inicial (Tick 0)
 
         if qtde_cpus < 1:
             raise ValueError("A quantidade de CPUs deve ser maior que zero.")
@@ -235,6 +238,40 @@ class Simulador:
             else:
                 tarefa.estado = "Nova"
 
+    def salvar_estado(self):
+            """Salva uma cópia profunda do estado atual do simulador."""
+            estado_atual = copy.deepcopy({
+                "tempo_global": self.tempo_global,
+                "tarefas": self.tarefas,
+                "ocorrencias": self.ocorrencias,
+                "finalizado": self.finalizado,
+                "historico": self.historico,
+                "eventos_gantt": self.eventos_gantt,
+                "cpus": self.cpus,
+                "tempo_desligado": self.tempo_desligado,
+                "tempo_no_quantum": self.tempo_no_quantum,
+                "ativacoes": self.ativacoes
+            })
+            # Se o histórico for modificado no passado, descarta o futuro
+            if len(self.snapshots) > self.tempo_global:
+                self.snapshots = self.snapshots[:self.tempo_global]
+            self.snapshots.append(estado_atual)
+
+    def carregar_estado(self, tempo):
+            """Restaura a simulação para um tempo específico."""
+            if 0 <= tempo < len(self.snapshots):
+                estado = copy.deepcopy(self.snapshots[tempo])
+                self.tempo_global = estado["tempo_global"]
+                self.tarefas = estado["tarefas"]
+                self.ocorrencias = estado["ocorrencias"]
+                self.finalizado = estado["finalizado"]
+                self.historico = estado["historico"]
+                self.eventos_gantt = estado["eventos_gantt"]
+                self.cpus = estado["cpus"]
+                self.tempo_desligado = estado["tempo_desligado"]
+                self.tempo_no_quantum = estado["tempo_no_quantum"]
+                self.ativacoes = estado["ativacoes"]
+
     def verificar_prazos(self):
         for ocorrencia in self.ocorrencias:
             if (
@@ -300,3 +337,4 @@ class Simulador:
         self.verificar_prazos()
         self.atualizar_estados()
         self.verificar_fim()
+        self.salvar_estado() # Salva o estado após concluir o avanço

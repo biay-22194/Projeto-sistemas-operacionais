@@ -363,42 +363,56 @@ def start_interface():
                     mostrar_alerta_erro(app, erro_conversao)
                     label_status.configure(text="Erro nos dados do arquivo.", text_color="#FF5555")
 
+# -------------------------------------------------------------------------
+    # CONTROLO DE TEMPO DA SIMULAÇÃO
+    # -------------------------------------------------------------------------
+    execucao_automatica_ativa = False
+
+    def retroceder_simulacao():
+        if simulador is None or simulador.tempo_global == 0:
+            return
+        
+        simulador.carregar_estado(simulador.tempo_global - 1)
+        atualizar_graficos_e_tabelas()
+
     def avancar_simulacao():
         if simulador is None:
-            mostrar_alerta_erro(app, "Carregue um arquivo de configuração primeiro para iniciar a simulação.")
+            mostrar_alerta_erro(app, "Carregue um ficheiro de configuração primeiro para iniciar a simulação.")
             return
-    
+            
         simulador.avancar_tick()
-        grafico_gantt.desenhar_eixos(
-            tcbs_do_sistema,
-            simulador.tempo_global
-        )
+        atualizar_graficos_e_tabelas()
 
-        grafico_gantt.desenhar_execucoes(
-            tcbs_do_sistema,
-            simulador.historico
-        )
+    def alternar_execucao_automatica():
+        nonlocal execucao_automatica_ativa
+        execucao_automatica_ativa = not execucao_automatica_ativa
+        
+        if execucao_automatica_ativa:
+            btn_auto.configure(text="Pausar", fg_color="#e74c3c", hover_color="#c0392b")
+            executar_loop_automatico()
+        else:
+            btn_auto.configure(text="Execução Automática", fg_color="#8e44ad", hover_color="#732d91")
 
-        grafico_gantt.desenhar_estados(
-            tcbs_do_sistema,
-            simulador.historico
-        )
+    def executar_loop_automatico():
+        if execucao_automatica_ativa and not getattr(simulador, 'finalizado', False):
+            avancar_simulacao()
+            app.after(1000, executar_loop_automatico)
 
-        grafico_gantt.desenhar_eventos(
-            tcbs_do_sistema,
-            simulador.eventos_gantt
-)
+    def atualizar_graficos_e_tabelas():
+        grafico_gantt.desenhar_eixos(tcbs_do_sistema, simulador.tempo_global)
+        grafico_gantt.desenhar_execucoes(tcbs_do_sistema, simulador.historico)
+        grafico_gantt.desenhar_estados(tcbs_do_sistema, simulador.historico)
+        grafico_gantt.desenhar_eventos(tcbs_do_sistema, simulador.eventos_gantt)
         grafico_gantt.desenhar_legenda()       
 
         label_tick.configure(text=f"Tick atual: {simulador.tempo_global}")
         atualizar_tabela_so()
         atualizar_tabela_tarefas()
-    
+
         if getattr(simulador, 'finalizado', False):
             label_status.configure(text="Simulação finalizada!", text_color="#55FF55")
-
-        print("Histórico:", simulador.historico)
-        print("Eventos Gantt:", simulador.eventos_gantt)
+            if execucao_automatica_ativa:
+                alternar_execucao_automatica()
 
     # -------------------------------------------------------------------------
     # LAYOUT DA INTERFACE
@@ -508,14 +522,21 @@ def start_interface():
         padx=10,
         pady=5
     )
+
     frame_controle = ctk.CTkFrame(painel_direito, fg_color="transparent")
     frame_controle.pack(fill="x", pady=10)
 
     label_tick = ctk.CTkLabel(frame_controle, text="Tick atual: 0", font=("Arial", 14, "bold"))
     label_tick.pack(side="left", padx=20)
 
+    btn_auto = ctk.CTkButton(frame_controle, text="Execução Automática", command=alternar_execucao_automatica, fg_color="#8e44ad", hover_color="#732d91")
+    btn_auto.pack(side="right", padx=10)
+
     btn_avancar = ctk.CTkButton(frame_controle, text="Avançar Tick", command=avancar_simulacao, fg_color="#27ae60", hover_color="#219150")
-    btn_avancar.pack(side="right", padx=20)
+    btn_avancar.pack(side="right", padx=10)
+    
+    btn_retroceder = ctk.CTkButton(frame_controle, text="Retroceder Tick", command=retroceder_simulacao, fg_color="#f39c12", hover_color="#d68910")
+    btn_retroceder.pack(side="right", padx=10)
 
     atualizar_tabela_so()
     atualizar_tabela_tarefas()
