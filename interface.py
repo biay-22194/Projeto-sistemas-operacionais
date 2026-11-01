@@ -283,7 +283,38 @@ def start_interface():
                         f"A nova duração ({dur}) não pode ser menor do que o tempo já processado."
                     )
                     return
+                 # Calcula a diferença entre a duração antiga e a nova
+                duracao_antiga = tarefa.duracao
+                diferenca = dur - duracao_antiga
+
+                # Verifica as ocorrências ainda não concluídas
+                if simulador:
+                    ocorrencias_ativas = [
+                        o for o in simulador.ocorrencias
+                        if o.tarefa is tarefa
+                        and o.estado != "Concluída"
+                    ]
+
+                    # Não permite reduzir a duração abaixo do tempo
+                    # já executado por uma ocorrência ativa
+                    for o in ocorrencias_ativas:
+                        tempo_executado = duracao_antiga - o.tempo_restante
+
+                        if dur < tempo_executado:
+                            mostrar_alerta_erro(
+                                app,
+                                "A nova duração não pode ser menor "
+                                "que o tempo já executado pela ocorrência."
+                            )
+                            return
+
+                    # Atualiza o tempo restante de cada ocorrência
+                    for o in ocorrencias_ativas:
+                        o.tempo_restante += diferenca
+
+                # Atualiza a duração no TCB
                 tarefa.duracao = dur
+
 
             # 3. Validação do Tempo de Ingresso
             if v_ingresso:
