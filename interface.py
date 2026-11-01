@@ -8,22 +8,28 @@ from structs import TCB, RateMonotonic, EarliestDeadlineFirst
 from utils import validar_configuracao
 from simulator import Simulador
 
-# Estados válidos
+# Lista de estados válidos permitidos para as tarefas do sistema
 ESTADOS_VALIDOS = ["Nova", "Pronta", "Executando", "Bloqueada", "Concluída"]
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------
 # INTERFACE GRÁFICA E POP-UPS
+# ----------------------------------------------------------------------------------------------------------------------------------------------
 def mostrar_alerta_erro(parent_app, mensagem):
+    """
+    Exibe uma janela modal (pop-up) de erro para alertar o utilizador sobre alterações recusadas ou falhas de validação.
+    Garante o foco na janela e evita problemas de renderização em ambientes Linux.
+    """
     popup = ctk.CTkToplevel(parent_app)
     popup.title("Alteração Não Permitida")
     popup.geometry("450x180")
     
-    # Evita erros de renderização no Linux
+    # Configurações para garantir o comportamento modal correto
     popup.transient(parent_app)
     popup.wait_visibility()
     popup.grab_set() 
     popup.focus()
 
+    # Rótulo de mensagem de erro com formatação destacada
     lbl_erro = ctk.CTkLabel(
         popup, 
         text=mensagem, 
@@ -34,40 +40,51 @@ def mostrar_alerta_erro(parent_app, mensagem):
     )
     lbl_erro.pack(pady=20, padx=15)
 
+    # Botão de confirmação para fechar a janela modal
     btn_fechar = ctk.CTkButton(popup, text="Entendido", command=popup.destroy, width=110)
     btn_fechar.pack(pady=5)
 
 
 def start_interface():
+    """
+    Função principal que inicializa a interface gráfica, constrói os formulários,
+    associa os eventos aos botões e gere o ciclo de vida do simulador.
+    """
+    # Configuração global do tema visual da aplicação
     ctk.set_appearance_mode("dark")
     
     app = ctk.CTk()
     app.title("Simulador Visual de Sistema Operacional")
     app.geometry("1100x750")
     
-    simulador = None
-    tcbs_do_sistema = []
-    
-    # -------------------------------------------------------------------------
-    # VALORES PADRÃO DA SIMULAÇÃO 
-    # -------------------------------------------------------------------------
+    # 1. Valores Padrão do Sistema Operacional
     VALORES_PADRAO_SO = {
         "algoritmo": "RM",
         "quantum": 2,
         "cpus": 1
     }
-    
     config_so = VALORES_PADRAO_SO.copy()
 
-    tabela_so_widget = None
+    # 2. INJEÇÃO DE TAREFAS PADRÃO (
+    tcbs_do_sistema = [
+        TCB(id="T1", cor="red", ingresso=0, duracao=3, periodo=10, prazo=10, lista_eventos=[]),
+        TCB(id="T2", cor="blue", ingresso=2, duracao=2, periodo=6, prazo=6, lista_eventos=[])
+    ]
+    
+    # Variáveis de controle do simulador e da interface gráfica
+    simulador = None
+    tabela_so_widget = None  
     tabela_tarefas_widget = None
+    label_tick = None
 
     # -------------------------------------------------------------------------
-    # RENDERIZAÇÃO DAS TABELAS
+    # RENDERIZAÇÃO DAS TABELAS INFORMATIVAS
     # -------------------------------------------------------------------------
     def atualizar_tabela_so():
+        """Atualiza a tabela visual com os parâmetros atuais do SO (Algoritmo, Quantum, CPUs e Estado)."""
         nonlocal tabela_so_widget
         
+        # Destrói o widget anterior para evitar sobreposição
         if tabela_so_widget is not None:
             tabela_so_widget.destroy()
 
@@ -82,6 +99,7 @@ def start_interface():
             ]
         ]
 
+        # Criação da nova tabela formatada
         tabela_so_widget = CTkTable(
             master=frame_tabela_so_container,
             values=dados_so,
@@ -91,6 +109,7 @@ def start_interface():
         tabela_so_widget.pack(expand=True, fill="both", padx=5, pady=5)
 
     def atualizar_tabela_tarefas():
+        """Atualiza a tabela com o conjunto de tarefas e as suas respetivas características e estados."""
         nonlocal tabela_tarefas_widget
         
         if tabela_tarefas_widget is not None:
@@ -98,6 +117,7 @@ def start_interface():
 
         dados_tarefas = [["ID", "Cor", "Ingresso", "Duração", "Período", "Prazo", "Estado Atual"]]
         
+        # Preenche as linhas da tabela com os atributos de cada TCB
         for t in tcbs_do_sistema:
             estado_atual = getattr(t, 'estado', 'Nova')
             dados_tarefas.append([
@@ -119,6 +139,7 @@ def start_interface():
         tabela_tarefas_widget.pack(expand=True, fill="both", padx=5, pady=5)
 
     def carregar_simulador_inicial():
+        """Instancia o objeto Simulador com as configurações atuais e as tarefas ativas."""
         nonlocal simulador
         if not tcbs_do_sistema:
             simulador = None
@@ -128,6 +149,7 @@ def start_interface():
         quantum_val = config_so["quantum"]
         cpus_val = config_so["cpus"]
 
+        # Seleção da classe do algoritmo de escalonamento
         if alg_nome == "RM":
             escalonador = RateMonotonic(quantum=quantum_val)
         elif alg_nome == "EDF":
@@ -135,6 +157,7 @@ def start_interface():
         else:
             raise ValueError("Algoritmo inválido.")
 
+        # Inicialização do motor de simulação
         simulador = Simulador(
             tarefas=tcbs_do_sistema,
             algoritmo=escalonador,
@@ -143,9 +166,10 @@ def start_interface():
         label_tick.configure(text="Tick atual: 0")
 
     # -------------------------------------------------------------------------
-    # MODIFICAÇÕES ANTES E DURANTE A EXECUÇÃO COM JUSTIFICATIVA 
+    # MODIFICAÇÕES ANTES E DURANTE A EXECUÇÃO COM VALIDAÇÃO SEMÂNTICA 
     # -------------------------------------------------------------------------
     def aplicar_config_so():
+        """Aplica alterações de configuração do SO (Algoritmo, Quantum, CPUs) em tempo de execução."""
         try:
             novo_alg = combo_algoritmo.get().strip().upper()
             txt_quantum = entry_so_quantum.get().strip()
@@ -154,6 +178,7 @@ def start_interface():
             q_val = int(txt_quantum) if txt_quantum else config_so["quantum"]
             c_val = int(txt_cpus) if txt_cpus else config_so["cpus"]
 
+            # Validações dos limites numéricos
             if q_val <= 0:
                 mostrar_alerta_erro(app, "Modificação Recusada:\nO Quantum precisa ser um número maior que zero (>= 1).")
                 return
@@ -166,7 +191,7 @@ def start_interface():
             config_so["quantum"] = q_val
             config_so["cpus"] = c_val
 
-            # Aplicação dinâmica sem resetar simulação em andamento
+            # Aplicação dinâmica no simulador ativo sem necessidade de reiniciar
             if simulador:
                 simulador.qtde_cpus = c_val
                 simulador.algoritmo.quantum = q_val
@@ -183,12 +208,14 @@ def start_interface():
             mostrar_alerta_erro(app, "Modificação Recusada:\nQuantum e número de CPUs devem ser valores inteiros válidos.")
 
     def editar_tarefa_existente():
+        """Permite editar os atributos de uma tarefa específica garantindo a coerência semântica."""
         v_id = entry_id.get().strip()
 
         if not v_id:
             mostrar_alerta_erro(app, "Operação Recusada:\nInforme o ID da tarefa que deseja alterar.")
             return
 
+        # Procura a tarefa pelo ID informado
         tarefa = next((t for t in tcbs_do_sistema if str(t.id) == str(v_id)), None)
 
         if not tarefa:
@@ -205,7 +232,7 @@ def start_interface():
         try:
             # --- VALIDAÇÕES SEMÂNTICAS DURANTE A EXECUÇÃO ---
             
-            # 1. Validação do Estado
+            # 1. Validação do Estado da Tarefa
             if v_novo_estado:
                 if v_novo_estado not in ESTADOS_VALIDOS:
                     mostrar_alerta_erro(
@@ -218,6 +245,7 @@ def start_interface():
                 if simulador and simulador.tempo_global > 0:
                     ocorrencias_tarefa = [o for o in simulador.ocorrencias if o.tarefa is tarefa]
 
+                    # Impede forçar execução de tarefa que ainda não ingressou no tempo global atual
                     if v_novo_estado == "Executando" and not ocorrencias_tarefa:
                         mostrar_alerta_erro(
                             app, 
@@ -226,6 +254,7 @@ def start_interface():
                         )
                         return
 
+                    # Atualiza o estado das ocorrências ativas
                     if v_novo_estado == "Concluída":
                         for o in ocorrencias_tarefa:
                             o.estado = "Concluída"
@@ -238,13 +267,14 @@ def start_interface():
 
                 tarefa.estado = v_novo_estado
 
-            # 2. Validação de Duração
+            # 2. Validação da Duração da Tarefa
             if v_duracao:
                 dur = int(v_duracao)
                 if dur <= 0:
                     mostrar_alerta_erro(app, "Modificação Recusada:\nA duração da tarefa deve ser obrigatoriamente maior que zero.")
                     return
                 
+                # Impede reduzir a duração para um valor menor do que o tempo que a tarefa já executou
                 tempo_ja_executado = getattr(tarefa, 'tempo_execucao', 0)
                 if simulador and dur < tempo_ja_executado:
                     mostrar_alerta_erro(
@@ -255,13 +285,14 @@ def start_interface():
                     return
                 tarefa.duracao = dur
 
-            # 3. Validação de Ingresso
+            # 3. Validação do Tempo de Ingresso
             if v_ingresso:
                 ing = int(v_ingresso)
                 if ing < 0:
                     mostrar_alerta_erro(app, "Modificação Recusada:\nO tempo de ingresso não pode ser um número negativo.")
                     return
                 
+                # Impede alterar o tempo de ingresso para o passado se a tarefa já tiver iniciado execução
                 if simulador and simulador.tempo_global > ing and getattr(tarefa, 'tempo_execucao', 0) > 0:
                     mostrar_alerta_erro(
                         app, 
@@ -294,7 +325,7 @@ def start_interface():
 
             atualizar_tabela_tarefas()
 
-            # Limpa entradas
+            # Limpa os campos do formulário após aplicar as edições
             entry_id.delete(0, 'end')
             entry_cor.delete(0, 'end')
             entry_ingresso.delete(0, 'end')
@@ -309,6 +340,7 @@ def start_interface():
             mostrar_alerta_erro(app, "Modificação Recusada:\nOs campos de Ingresso, Duração, Período e Prazo aceitam apenas números inteiros.")
 
     def abrir_seletor_de_arquivo():
+        """Abre caixa de diálogo para carregar e validar um ficheiro de configuração de texto (.txt)."""
         nonlocal tcbs_do_sistema
         caminho_selecionado = filedialog.askopenfilename(
             title="Selecione o arquivo de configuração",
@@ -323,6 +355,7 @@ def start_interface():
                 label_status.configure(text="Aguardando um arquivo válido...", text_color="white")
             else:
                 try:
+                    # Carrega as configurações globais do SO lidas do ficheiro
                     algoritmo, quantum, qtde_cpus = cfg_so
                     config_so["algoritmo"] = algoritmo.upper()
                     config_so["quantum"] = int(quantum)
@@ -334,6 +367,7 @@ def start_interface():
                     entry_so_cpus.delete(0, 'end')
                     entry_so_cpus.insert(0, str(config_so["cpus"]))
 
+                    # Substitui as tarefas atuais pelas tarefas importadas
                     tcbs_do_sistema.clear()
                     
                     for tarefa in lista_tarefas:
@@ -369,12 +403,13 @@ def start_interface():
                     )
 
 
-# -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # CONTROLO DE TEMPO DA SIMULAÇÃO
     # -------------------------------------------------------------------------
     execucao_automatica_ativa = False
 
     def retroceder_simulacao():
+        """Recua o tempo da simulação em 1 tick, restaurando o estado guardado no histórico."""
         if simulador is None or simulador.tempo_global == 0:
             return
         
@@ -385,14 +420,16 @@ def start_interface():
         atualizar_graficos_e_tabelas()
 
     def avancar_simulacao():
+        """Avança a simulação em 1 tick de relógio e atualiza a interface."""
         if simulador is None:
-            mostrar_alerta_erro(app, "Carregue um ficheiro de configuração primeiro para iniciar a simulação.")
+            mostrar_alerta_erro(app, "Carregue um arquivo de configuração primeiro para iniciar a simulação.")
             return
             
         simulador.avancar_tick()
         atualizar_graficos_e_tabelas()
 
     def alternar_execucao_automatica():
+        """Alterna entre o modo de pausa e o modo de execução automática contínua."""
         nonlocal execucao_automatica_ativa
         execucao_automatica_ativa = not execucao_automatica_ativa
         
@@ -403,11 +440,13 @@ def start_interface():
             btn_auto.configure(text="Execução Automática", fg_color="#8e44ad", hover_color="#732d91")
 
     def executar_loop_automatico():
+        """Loop recursivo temporizado para avançar os ticks automaticamente a cada 1 segundo."""
         if execucao_automatica_ativa and not getattr(simulador, 'finalizado', False):
             avancar_simulacao()
             app.after(1000, executar_loop_automatico)
 
     def atualizar_graficos_e_tabelas():
+        """Redesenha todos os componentes visuais do Gantt, tabelas e rótulos de estado."""
         grafico_gantt.desenhar_eixos(tcbs_do_sistema, simulador.tempo_global)
         grafico_gantt.desenhar_execucoes(tcbs_do_sistema, simulador.historico)
         grafico_gantt.desenhar_estados(tcbs_do_sistema, simulador.historico)
@@ -418,12 +457,14 @@ def start_interface():
         atualizar_tabela_so()
         atualizar_tabela_tarefas()
 
+        # Interrompe a execução automática e alerta o utilizador se a simulação tiver finalizado
         if getattr(simulador, 'finalizado', False):
             label_status.configure(text="Simulação finalizada!", text_color="#55FF55")
             if execucao_automatica_ativa:
                 alternar_execucao_automatica()
     
     def exportar_gantt_png():
+        """Abre a caixa de diálogo para salvar a imagem PNG do gráfico de Gantt em alta definição."""
         if simulador is None:
             mostrar_alerta_erro(
                 app,
@@ -456,7 +497,7 @@ def start_interface():
             )
 
     # -------------------------------------------------------------------------
-    # LAYOUT DA INTERFACE
+    # LAYOUT E CONSTRUÇÃO DOS PAINÉIS DA INTERFACE
     # -------------------------------------------------------------------------
     painel_esquerdo = ctk.CTkFrame(app, width=420)
     painel_esquerdo.pack(side="left", fill="both", padx=10, pady=10)
@@ -464,7 +505,7 @@ def start_interface():
     painel_direito = ctk.CTkFrame(app)
     painel_direito.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 
-    # --- PAINEL ESQUERDO ---
+    # --- PAINEL ESQUERDO: CONTROLES E FORMULÁRIOS ---
     titulo = ctk.CTkLabel(painel_esquerdo, text="Painel de Controle", font=("Arial", 18, "bold"))
     titulo.pack(pady=(10, 5))
 
@@ -477,12 +518,12 @@ def start_interface():
     frame_scroll_forms = ctk.CTkScrollableFrame(painel_esquerdo)
     frame_scroll_forms.pack(fill="both", expand=True, padx=5, pady=10)
 
-    # 1. FORMULÁRIO SO COM VALORES PADRÃO (Req 3.2)
+    # 1. Formulário do Sistema Operacional
     lbl_so_titulo = ctk.CTkLabel(
         frame_scroll_forms, 
         text="Configuração do SO", 
         font=("Arial", 14, "bold"),
-        wraplength=300,  # Limita o texto para não ultrapassar a barra
+        wraplength=300,
         anchor="w"
     )
     lbl_so_titulo.pack(fill="x", padx=10, pady=(10, 5))
@@ -507,7 +548,7 @@ def start_interface():
 
     ctk.CTkFrame(frame_scroll_forms, height=2, fg_color="#333333").pack(fill="x", padx=10, pady=10)
 
-    # 2. FORMULÁRIO TAREFAS COM SUGESTÕES PADRÃO (Req 3.2)
+    # 2. Formulário de Edição/Configuração de Tarefas
     lbl_form_titulo = ctk.CTkLabel(
         frame_scroll_forms, 
         text="Modificar / Configurar Tarefa", 
@@ -518,6 +559,7 @@ def start_interface():
     lbl_form_titulo.pack(fill="x", padx=10, pady=5)
 
     def criar_campo(label_text, placeholder=""):
+        """Função auxiliar para construir rótulos e campos de texto padronizados."""
         lbl = ctk.CTkLabel(frame_scroll_forms, text=label_text, font=("Arial", 12))
         lbl.pack(anchor="w", padx=10, pady=(5, 0))
         entry = ctk.CTkEntry(frame_scroll_forms, placeholder_text=placeholder, text_color="#FBFFFF")
@@ -535,7 +577,7 @@ def start_interface():
     btn_atualizar = ctk.CTkButton(frame_scroll_forms, text="Salvar Alterações na Tarefa", command=editar_tarefa_existente, fg_color="#1f538d")
     btn_atualizar.pack(pady=15)
 
-    # --- PAINEL DIREITO ---
+    # --- PAINEL DIREITO: TABELAS, VISUALIZAÇÃO GANTT E CONTROLO ---
     lbl_tabela_so = ctk.CTkLabel(painel_direito, text="Configurações Atuais do Sistema Operacional", font=("Arial", 16, "bold"))
     lbl_tabela_so.pack(pady=(10, 5))
 
@@ -548,24 +590,9 @@ def start_interface():
     frame_tabela_tarefas_container = ctk.CTkScrollableFrame(painel_direito)
     frame_tabela_tarefas_container.pack(fill="both", expand=True, padx=10, pady=5)
 
-    # Área do gráfico de Gantt
-    lbl_gantt = ctk.CTkLabel(
-        painel_direito,
-        text="Gráfico de Gantt",
-        font=("Arial", 16, "bold")
-    )
-    lbl_gantt.pack(pady=(10, 5))
-
-    grafico_gantt = GraficoGantt(painel_direito)
-    grafico_gantt.pack(
-        fill="both",
-        expand=True,
-        padx=10,
-        pady=5
-    )
-
+    # Barra inferior de controlo fixada na parte inferior
     frame_controle = ctk.CTkFrame(painel_direito, fg_color="transparent")
-    frame_controle.pack(fill="x", pady=10)
+    frame_controle.pack(side="bottom", fill="x", pady=10)
 
     label_tick = ctk.CTkLabel(frame_controle, text="Tick atual: 0", font=("Arial", 14, "bold"))
     label_tick.pack(side="left", padx=20)
@@ -588,9 +615,23 @@ def start_interface():
     )
     btn_exportar.pack(side="right", padx=10)
 
+    # Área do gráfico de Gantt com scrollbar horizontal
+    lbl_gantt = ctk.CTkLabel(painel_direito, text="Gráfico de Gantt", font=("Arial", 16, "bold"))
+    lbl_gantt.pack(pady=(10, 5))
+    
+    frame_scroll_gantt = ctk.CTkScrollableFrame(painel_direito, orientation="horizontal", fg_color="transparent")
+    frame_scroll_gantt.pack(fill="both", expand=True, padx=10, pady=5)
+
+    # Instanciação do componente do Gráfico de Gantt
+    grafico_gantt = GraficoGantt(frame_scroll_gantt)
+    grafico_gantt.pack(fill="both", expand=True)
+
+    # Execuções de arranque: renderiza as tabelas e inicializa o simulador
     atualizar_tabela_so()
     atualizar_tabela_tarefas()
+    carregar_simulador_inicial()
 
+    # Inicia o loop principal de eventos da interface gráfica
     app.mainloop()
 
 if __name__ == "__main__":
