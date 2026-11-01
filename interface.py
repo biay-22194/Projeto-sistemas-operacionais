@@ -392,10 +392,16 @@ def start_interface():
                     atualizar_tabela_so()
                     atualizar_tabela_tarefas()
 
-                except ValueError:
-                    erro_conversao = "Erro: Esperava-se números inteiros nos parâmetros do arquivo."
-                    mostrar_alerta_erro(app, erro_conversao)
-                    label_status.configure(text="Erro nos dados do arquivo.", text_color="#FF5555")
+                except ValueError as e:
+                    mostrar_alerta_erro(
+                        app,
+                        f"Erro na configuração:\n{str(e)}"
+                    )
+                    label_status.configure(
+                        text="Erro nos dados do arquivo.",
+                        text_color="#FF5555"
+                    )
+
 
     # -------------------------------------------------------------------------
     # CONTROLO DE TEMPO DA SIMULAÇÃO

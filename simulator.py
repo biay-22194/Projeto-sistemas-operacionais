@@ -29,6 +29,11 @@ class Simulador:
         self.tempo_global = 0         # Relógio global do sistema (medido em ticks)
         self.tarefas = tarefas         # Lista de TCBs registradas no sistema
         self.algoritmo = algoritmo     # Instância do algoritmo de escalonamento (RM ou EDF)
+
+        # Validação do valor do quantum de tempo
+        if self.algoritmo.quantum is not None and self.algoritmo.quantum <= 0:
+            raise ValueError("O quantum deve ser um número inteiro maior que zero.")
+
         self.ocorrencias = []          # Lista de todas as ocorrências de tarefas ativadas
         self.finalizado = False        # Flag que sinaliza o encerramento da simulação
         self.historico = []            # Registo dos estados em cada tick para o Gráfico de Gantt
