@@ -19,7 +19,7 @@ class Ocorrencia:
 
 class Simulador:
     """
-    Motor central de simulação do Sistema Operativo Multitarefa.
+    Motor central de simulação do Sistema Operacional Multitarefa.
     Gere o relógio global, a alocação de CPUs, a execução do escalonador,
     o registo de eventos e o histórico para navegação no tempo (debugger).
     """
@@ -50,7 +50,7 @@ class Simulador:
         self.tempo_desligado = [0] * self.qtde_cpus
         self.tempo_no_quantum = [0] * self.qtde_cpus
 
-        # Registo do número de ativações realizadas para cada tarefa
+        # Registro do número de ativações realizadas para cada tarefa
         self.ativacoes = {t.id: 0 for t in tarefas}
 
         # Prepara prioridades estáticas no escalonador (caso aplicável, ex: Rate Monotonic)
@@ -100,7 +100,7 @@ class Simulador:
                 self.ocorrencias.append(ocorrencia)
                 self.ativacoes[tarefa.id] += 1
 
-                # Regista o evento visual de chegada no Gantt
+                # Registra o evento visual de chegada no Gantt
                 self.eventos_gantt.append({
                     "tempo": self.tempo_global,
                     "tarefa": tarefa.id,
@@ -221,7 +221,7 @@ class Simulador:
             # Processamento de CPU Ativa
             print(f"CPU {i}: executando tarefa {ocorrencia.tarefa.id}")
 
-            # Regista a execução no histórico de estados do tick atual
+            # Registra a execução no histórico de estados do tick atual
             self.historico.append({
                 "tempo": self.tempo_global,
                 "cpu": i,
@@ -365,7 +365,7 @@ class Simulador:
         Executa a sequência completa de passos de um ciclo de relógio (Tick):
         1. Ativação de novas instâncias de tarefas.
         2. Escalonamento e alocação de CPUs.
-        3. Registo de tarefas prontas/bloqueadas no histórico.
+        3. Registro de tarefas prontas/bloqueadas no histórico.
         4. Processamento da execução nas CPUs.
         5. Incremento do relógio e verificação de prazos/término.
         6. Gravação do snapshot para o histórico de navegação temporal.
@@ -379,7 +379,7 @@ class Simulador:
         self.ativar_tarefas()
         self.escalonar()
 
-        # Guarda o registo das tarefas que permaneceram em espera/bloqueio neste tick
+        # Guarda o registro das tarefas que permaneceram em espera/bloqueio neste tick
         for ocorrencia in self.ocorrencias:
             if ocorrencia.estado in ("Pronta", "Bloqueada"):
                 self.historico.append({

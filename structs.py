@@ -6,7 +6,7 @@ class TCB:
     """
     Estrutura de dados TCB (Task Control Block).
     Armazena todos os metadados, características temporais e métricas de execução
-    de uma tarefa individual dentro do simulador do Sistema Operativo.
+    de uma tarefa individual dentro do simulador do Sistema Operacional.
     """
     id: str                   # Identificador único da tarefa (ex: "T1", "A")
     cor: str                  # Cor representativa na interface visual (hexadecimal ou nome)
@@ -49,7 +49,7 @@ class RateMonotonic:
 
     def _obter_chave(self, ocorrencia, cpu_atual):
         """
-        Gera a tupla de ordenação e desempate estipulada pelo Requisito 4.3:
+        Gera a tupla de ordenação e desempate:
         0. Prioridade estática do algoritmo RM (menor período = maior prioridade).
         1. Manutenção na CPU (prefere a ocorrência que já estava em execução na CPU para minimizar trocas de contexto).
         2. Menor prazo absoluto limite (deadline).
@@ -98,7 +98,7 @@ class EarliestDeadlineFirst:
 
     def _obter_chave(self, ocorrencia, cpu_atual):
         """
-        Gera a tupla de ordenação e desempate para o algoritmo EDF (Requisito 4.3):
+        Gera a tupla de ordenação e desempate para o algoritmo EDF:
         0. Menor prazo absoluto limite (deadline mais próxima = maior prioridade dinâmica).
         1. Manutenção na CPU (evita troca de contexto desnecessária).
         2. Menor prazo relativo limite.

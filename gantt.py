@@ -33,7 +33,7 @@ class GraficoGantt(tk.Frame):
         # Limpa todos os elementos desenhados anteriormente no Canvas
         self.canvas.delete("all")
 
-        # Parâmetros de espaçamento e dimensão da grelha
+        # Parâmetros de espaçamento e dimensão da "grade"
         margem_esquerda = 70
         margem_superior = 85
         altura_linha = 40
@@ -57,7 +57,7 @@ class GraficoGantt(tk.Frame):
                 fill="white"
             )
 
-            # Linha vertical da grelha
+            # Linha vertical da grade
             self.canvas.create_line(
                 x,
                 margem_superior,
@@ -79,7 +79,7 @@ class GraficoGantt(tk.Frame):
                 anchor="e"
             )
 
-            # Linha horizontal da grelha de cada tarefa
+            # Linha horizontal da grade de cada tarefa
             self.canvas.create_line(
                 margem_esquerda,
                 y + altura_linha,
@@ -219,7 +219,7 @@ class GraficoGantt(tk.Frame):
                     fill="#555555",
                     outline="white"
                 )
-                # Cruz interna 'X'
+                # X vermelho 
                 self.canvas.create_line(
                     x1 + 5, y1 + 5,
                     x2 - 5, y2 - 5,
@@ -238,7 +238,7 @@ class GraficoGantt(tk.Frame):
         Renderiza os símbolos geométricos pontuais:
         - Triângulo Verde: Chegada de uma nova tarefa.
         - Círculo Azul: Conclusão com sucesso de uma instância.
-        - Cruz Vermelha ('X'): Violação/Perda do prazo estipulado (Deadline miss).
+        - X vermelho: Violação/Perda do prazo estipulado (Deadline miss).
         """
         margem_esquerda = 70
         margem_superior = 85
@@ -287,7 +287,7 @@ class GraficoGantt(tk.Frame):
                 )
 
             elif tipo == "Perda de prazo":
-                # Desenha o 'X' em vetor para compatibilidade total com exportação PostScript
+                # Desenha o 'X' 
                 self.canvas.create_line(
                     x - 5, y + 3, x + 5, y + 13, 
                     fill="#FF4444", width=3
@@ -407,8 +407,7 @@ class GraficoGantt(tk.Frame):
     
     def exportar_png(self, tarefas, historico, eventos, tempo_maximo, caminho):
         """
-        Converte o desenho vetorial do Canvas em uma imagem PNG em alta definição (DPI alto),
-        garantindo um fundo escuro e legibilidade completa da legenda e textos.
+        Converte o desenho vetorial do Canvas em uma imagem PNG em alta definição.
         """
         caixa = self.canvas.bbox("all")
         largura = caixa[2] - caixa[0] + 50 if caixa else 1000

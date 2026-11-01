@@ -57,7 +57,7 @@ def start_interface():
     app.title("Simulador Visual de Sistema Operacional")
     app.geometry("1100x750")
     
-    # 1. Valores Padrão do Sistema Operativo
+    # 1. Valores Padrão do Sistema Operacional
     VALORES_PADRAO_SO = {
         "algoritmo": "RM",
         "quantum": 2,
@@ -65,13 +65,13 @@ def start_interface():
     }
     config_so = VALORES_PADRAO_SO.copy()
 
-    # 2. INJEÇÃO DE TAREFAS PADRÃO (Requisito 3.2 - Auto-população no arranque)
+    # 2. INJEÇÃO DE TAREFAS PADRÃO (
     tcbs_do_sistema = [
         TCB(id="T1", cor="red", ingresso=0, duracao=3, periodo=10, prazo=10, lista_eventos=[]),
         TCB(id="T2", cor="blue", ingresso=2, duracao=2, periodo=6, prazo=6, lista_eventos=[])
     ]
     
-    # Variáveis de controlo do simulador e da interface gráfica
+    # Variáveis de controle do simulador e da interface gráfica
     simulador = None
     tabela_so_widget = None  
     tabela_tarefas_widget = None
@@ -117,7 +117,7 @@ def start_interface():
 
         dados_tarefas = [["ID", "Cor", "Ingresso", "Duração", "Período", "Prazo", "Estado Atual"]]
         
-        # Popula as linhas da tabela com os atributos de cada TCB
+        # Preenche as linhas da tabela com os atributos de cada TCB
         for t in tcbs_do_sistema:
             estado_atual = getattr(t, 'estado', 'Nova')
             dados_tarefas.append([
@@ -502,7 +502,7 @@ def start_interface():
     painel_direito = ctk.CTkFrame(app)
     painel_direito.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 
-    # --- PAINEL ESQUERDO: CONTROLOS E FORMULÁRIOS ---
+    # --- PAINEL ESQUERDO: CONTROLES E FORMULÁRIOS ---
     titulo = ctk.CTkLabel(painel_esquerdo, text="Painel de Controle", font=("Arial", 18, "bold"))
     titulo.pack(pady=(10, 5))
 
@@ -515,7 +515,7 @@ def start_interface():
     frame_scroll_forms = ctk.CTkScrollableFrame(painel_esquerdo)
     frame_scroll_forms.pack(fill="both", expand=True, padx=5, pady=10)
 
-    # 1. Formulário do Sistema Operativo
+    # 1. Formulário do Sistema Operacional
     lbl_so_titulo = ctk.CTkLabel(
         frame_scroll_forms, 
         text="Configuração do SO", 
