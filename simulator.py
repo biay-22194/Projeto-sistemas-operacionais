@@ -19,6 +19,10 @@ class Simulador:
         self.tempo_global = 0
         self.tarefas = tarefas
         self.algoritmo = algoritmo
+        
+        if self.algoritmo.quantum is not None and self.algoritmo.quantum <= 0:
+            raise ValueError("O quantum deve ser um número inteiro maior que zero.")
+            
         self.ocorrencias = []
         self.finalizado = False
         self.historico = []               #armazena os estados durante cada tick
