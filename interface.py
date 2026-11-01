@@ -379,6 +379,9 @@ def start_interface():
             return
         
         simulador.carregar_estado(simulador.tempo_global - 1)
+
+        #sincroniza as tarefas da interface com as tarefas restauradas pelo simulador
+        tcbs_do_sistema[:] = simulador.tarefas
         atualizar_graficos_e_tabelas()
 
     def avancar_simulacao():
