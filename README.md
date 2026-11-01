@@ -1,29 +1,162 @@
-Dia 1: estrutura da TCB, pega arquivos txt com as configurações e os salva. OBS: não foi feita a visualização das tarefas na interface (melhor fazer depois).
+# Simulador Visual de Escalonamento de Tarefas — Projeto A
 
-Dia 2 — Motor da Simulação
+Projeto acadêmico de **Sistemas Operacionais**, desenvolvido em **Python**, para simular o escalonamento de tarefas periódicas em uma ou mais CPUs. A aplicação permite acompanhar a execução por ticks, comparar os algoritmos **Rate Monotonic (RM)** e **Earliest Deadline First (EDF)** e visualizar o resultado em um **gráfico de Gantt**.
 
-Criei o arquivo simulator.py, responsável por controlar a execução das tarefas.
+## Funcionalidades
 
-Implementei o relógio global, que avança em ticks.
+- Importação de arquivos de configuração `.txt` com parâmetros do sistema e das tarefas.
+- Representação das tarefas por estruturas do tipo **TCB (Task Control Block)**.
+- Escalonamento por **RM** (prioridade associada ao período) e **EDF** (prioridade associada ao prazo absoluto mais próximo).
+- Simulação por ticks, com chegada e ativação periódica de tarefas, limitada a **10 ativações por tarefa periódica**.
+- Execução em **múltiplas CPUs**, com preempção, controle de quantum e registro da ociosidade.
+- Acompanhamento dos estados das tarefas: **Nova, Pronta, Executando, Bloqueada e Concluída** (tarefas aperiódicas podem ser exibidas como ignoradas).
+- Identificação de eventos de **chegada, conclusão e perda de prazo**.
+- Interface gráfica para alterar parâmetros do sistema e características das tarefas, com mensagens de validação.
+- Execução passo a passo ou automática, com possibilidade de pausar e **retroceder ticks**.
+- Armazenamento de estados anteriores (*snapshots*) e continuação após alterações.
+- Gráfico de Gantt com cores, identificação de CPUs, estados e marcadores de eventos.
+- **Exportação do gráfico completo para PNG**, inclusive em simulações longas.
 
-Implementei a ativação periódica das tarefas, com limite de 10 ativações por tarefa.
+## Tecnologias e dependências
 
-Adicionei o controle dos estados, do tempo restante de execução e da verificação de prazos (deadlines).
+- Python 3
+- Tkinter (interface gráfica básica)
+- [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) (componentes da interface)
+- [CTkTable](https://github.com/Akascape/CTkTable) (tabelas)
+- [Pillow](https://pillow.readthedocs.io/) (exportação para PNG)
 
-Criei um escalonador provisório que seleciona a primeira tarefa disponível.
+O Tkinter costuma vir com instalações de Python para Windows; em algumas distribuições Linux, pode ser necessário instalar o pacote do sistema (`python3-tk`).
 
-Integrei o simulador à interface gráfica, adicionando o botão Avançar Tick e o contador de tempo.
+## Instalação e execução
 
-Status: a implementação está pronta e a interface abre normalmente, mas ainda falta testar a execução com um arquivo de configuração.
+Na pasta do projeto, crie e ative um ambiente virtual (recomendado):
 
-Dia 3 - implementei os métodos de escalonamento rate monotonic e earliest deadline first, tive que mudar no simulador na parte de quantum. Não fiz a mudança de selecionar o algoritmo sem alterar o motor da simulação, vou fazer no meu próximo dia.
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
+Em Windows, a ativação é feita por `.venv\Scripts\activate` no Prompt de Comando.
 
-Dia 4 — Múltiplas CPUs
-Implementei o suporte a múltiplas CPUs, adaptando o escalonamento e a execução simultânea de tarefas. Adicionei controle individual de quantum e ociosidade, preempção e redução de migrações desnecessárias. Integrei as configurações à interface e realizei testes com RM, EDF e finalização automática, todos com resultados esperados.
+Instale as bibliotecas externas:
 
+```bash
+python -m pip install customtkinter CTkTable Pillow
+```
 
-Dia 5 - foi implementado a parte de modificação das características das tarefas/do simulador na interface, com mensagens de erro. Não testei muito a fundo, mas creio que a parte de "Integrar os controles da interface com o simulador" esteja funcionando (?)
+Execute a interface:
 
-**Dia 6 — Gráfico de Gantt:** Foi implementado o gráfico de Gantt utilizando o Canvas do Tkinter, integrado à interface do simulador. Adicionei o registro do histórico de execução das tarefas, identificação das CPUs, diferenciação visual dos estados (Pronta, Executando e Bloqueada), eventos de chegada, conclusão e perda de prazo, além de uma legenda e organização das tarefas por ID. Realizei testes com múltiplas CPUs, perda de prazo e bloqueio de tarefas, todos funcionando corretamente.
-**Obs.:** Acredito que o gráfico também funcione em simulações mais longas, mas não tive tempo de testar. Seria interessante realizar esse teste para verificar se a visualização continua correta com muitos ticks e se será necessário adicionar rolagem horizontal.
+```bash
+python main.py
+```
+
+> Os módulos `main.py`, `interface.py`, `simulator.py`, `structs.py`, `utils.py` e `gantt.py` devem estar na mesma pasta, com esses nomes. Os arquivos de teste são opcionais para iniciar o aplicativo.
+
+## Formato do arquivo de configuração
+
+O simulador lê um arquivo de texto com **campos separados por ponto e vírgula (`;`)**. A primeira linha configura o sistema; as linhas seguintes descrevem as tarefas.
+
+**Primeira linha:**
+
+```text
+algoritmo;quantum;quantidade_cpus
+```
+
+- `algoritmo`: `rm` ou `edf`.
+- `quantum`: inteiro maior que zero.
+- `quantidade_cpus`: inteiro maior que zero.
+
+**Demais linhas:**
+
+```text
+id;cor;ingresso;duracao;periodo;prazo;lista_eventos
+```
+
+- `id`: identificador único da tarefa.
+- `cor`: nome de cor reconhecido pela interface (por exemplo, `red`, `blue`, `green`) ou código hexadecimal válido.
+- `ingresso`: tick inicial de chegada (não negativo).
+- `duracao`: quantidade de ticks de CPU exigidos por ativação (maior que zero).
+- `periodo`: intervalo entre ativações; valores positivos indicam tarefas periódicas. Na implementação atual, `0` indica tarefa aperiódica, não escalonada pelo motor periódico.
+- `prazo`: prazo relativo para concluir cada ativação (maior que zero).
+- `lista_eventos`: campo presente no formato de entrada; nos testes fornecidos foi utilizado `[]`.
+
+**Exemplo (`exemplo.txt`):**
+
+```text
+rm;2;2
+A;red;0;2;5;5;[]
+B;blue;0;3;10;10;[]
+C;green;0;1;8;8;[]
+```
+
+O prazo absoluto de cada ativação é calculado a partir do instante dessa ativação mais o prazo relativo. O programa registra uma perda de prazo caso a ocorrência ainda não tenha sido concluída quando o prazo é atingido.
+
+## Como utilizar
+
+1. Execute `main.py`.
+2. Clique em **Carregar Arquivo .TXT** e selecione uma configuração.
+3. Confira o algoritmo, o quantum, o número de CPUs e as tarefas cadastradas.
+4. Use **Avançar Tick** para simular uma unidade de tempo, ou **Execução Automática** para avançar continuamente; o botão permite pausar.
+5. Acompanhe os estados na tabela e as execuções no gráfico de Gantt.
+6. Use **Retroceder Tick** para consultar estados anteriores. É possível editar características de tarefas e prosseguir a partir do estado restaurado.
+7. Clique em **Exportar Gantt (PNG)** para escolher o local de salvamento da imagem.
+
+## Interpretação do gráfico de Gantt
+
+- **Retângulos coloridos:** execução de uma tarefa; o número indica a CPU utilizada.
+- **Contorno com `P`:** tarefa pronta.
+- **Retângulo cinza com `X`:** tarefa bloqueada.
+- **Triângulo verde:** chegada/ativação.
+- **Marcador azul:** conclusão.
+- **`X` vermelho:** perda de prazo.
+
+As tarefas são organizadas por identificador no eixo vertical; o eixo horizontal representa os ticks da simulação.
+
+## Testes realizados
+
+Durante a revisão final, foram executados testes manuais de:
+
+| Categoria | Casos verificados |
+|---|---|
+| Escalonamento | RM e EDF; chegada de tarefa mais prioritária; preempção |
+| Multiprocessamento | Execução com duas CPUs e tarefas concorrentes |
+| Prioridades | Empate em RM e preferência por tarefa já em execução |
+| Prazos | Detecção de perda de deadline e continuidade da tarefa |
+| Entradas inválidas | Algoritmo inválido, zero CPUs, quantum nulo/negativo, duração nula/negativa, período negativo, prazo zero, campos faltantes, valor não numérico e arquivo vazio |
+| Identificadores | Teste com IDs diferentes; foi adicionada validação para IDs repetidos, cuja rejeição deve ser confirmada na revisão final |
+| Histórico | Retrocesso, edição da cor e da duração, continuação e recálculo do histórico após edição |
+| Exportação | Gantt em PNG e exportação de simulação longa, com verificação visual dos ticks, CPUs e marcadores |
+
+Os testes confirmam os **cenários executados**, mas não substituem uma bateria automatizada de testes nem garantem ausência de defeitos em todos os casos possíveis.
+
+## Estrutura do projeto
+
+```text
+Projeto-sistemas-operacionais/
+├── main.py          # Ponto de entrada
+├── interface.py     # Interface e controles do usuário
+├── simulator.py     # Relógio, ocorrências, CPUs, histórico e eventos
+├── structs.py       # TCB e algoritmos RM/EDF
+├── utils.py         # Leitura e validação dos arquivos .txt
+├── gantt.py         # Desenho e exportação do gráfico
+├── teste_*.txt      # Configurações de teste (quando presentes)
+└── README.md        # Documentação
+```
+
+## Empacotamento e entrega
+
+O planejamento do projeto prevê criar um executável com **PyInstaller** e verificar sua execução sem instalações adicionais de bibliotecas Python na máquina de destino. **Essa etapa ainda precisa ser concluída e validada**; portanto, o procedimento de distribuição final não é apresentado aqui como já testado.
+
+Para preparar o ambiente de empacotamento:
+
+```bash
+python -m pip install pyinstaller
+```
+
+O empacotamento deve ser realizado e testado no sistema operacional de destino: em geral, um executável gerado no Linux não é um `.exe` de Windows. Depois de gerar o artefato, é necessário verificar abertura da interface, carregamento dos `.txt`, simulação, retrocesso e exportação PNG em uma máquina ou ambiente limpo.
+
+## Observações
+
+- Tarefas com período `0` não são executadas pelo mecanismo periódico atual.
+- Os resultados podem depender das características das tarefas, dos prazos e da quantidade de CPUs.
+- O projeto foi desenvolvido para fins didáticos, como representação simplificada de conceitos de escalonamento de Sistemas Operacionais.
