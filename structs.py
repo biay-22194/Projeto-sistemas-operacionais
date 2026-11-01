@@ -24,12 +24,13 @@ class RateMonotonic:
     def __init__(self, quantum: int = None):
         self.quantum = quantum
 
+    
     def preparar_tarefas(self, tcbs: list):
-        """Atribui prioridade estática baseada no menor período (RM)."""
-        validas = [t for t in tcbs if t.periodo > 0]
-        validas.sort(key=lambda t: (t.periodo, t.ingresso))
-        for idx, tcb in enumerate(validas, start=1):
-            tcb.prioridade = idx
+        """Atribui prioridade estática com base no período da tarefa."""
+        for tcb in tcbs:
+            if tcb.periodo > 0:
+                tcb.prioridade = tcb.periodo
+
 
     def _obter_chave(self, ocorrencia, cpu_atual):
         """

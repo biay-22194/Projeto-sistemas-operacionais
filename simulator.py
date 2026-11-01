@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import copy
+from structs import RateMonotonic
 
 @dataclass
 class Ocorrencia:
@@ -90,16 +91,41 @@ class Simulador:
             if o.estado in ("Pronta", "Executando")
         ]
 
+        
         # Seleciona as ocorrências prioritárias
         selecionadas = []
-        
+
+        # Ocorrências que já estavam executando em alguma CPU
+        ocorrencias_em_execucao = [
+            o for o in self.cpus if o is not None
+        ]
+
         while aptas and len(selecionadas) < self.qtde_cpus:
-        
-            proxima = self.algoritmo.selecionar_proxima(
-                aptas,
-                None
-            )
-        
+
+            # Primeiro compara a prioridade principal do algoritmo.
+            # Depois, em caso de empate, prefere quem já executava.
+            def chave_selecao(o):
+                if isinstance(self.algoritmo, RateMonotonic):
+                    prioridade = o.tarefa.periodo
+                else:
+                    prioridade = o.prazo_absoluto
+
+                ja_executando = (
+                    0 if any(o is atual for atual in ocorrencias_em_execucao)
+                    else 1
+                )
+
+                return (
+                    prioridade,
+                    ja_executando,
+                    o.prazo_absoluto,
+                    o.tarefa.ingresso,
+                    o.tarefa.duracao,
+                    str(o.tarefa.id)
+                )
+
+            proxima = min(aptas, key=chave_selecao)
+
             selecionadas.append(proxima)
             aptas.remove(proxima)
         
