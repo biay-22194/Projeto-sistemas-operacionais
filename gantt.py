@@ -1,4 +1,5 @@
 import tkinter as tk
+from PIL import Image, ImageDraw, ImageFont
 
 class GraficoGantt(tk.Frame):
 
@@ -367,3 +368,170 @@ class GraficoGantt(tk.Frame):
             fill="white",
             anchor="w"
         )
+    
+    def exportar_png(self, tarefas, historico, eventos, tempo_maximo, caminho):
+        
+        margem_esquerda = 100
+        margem_superior = 100
+        largura_tick = 40
+        altura_linha = 40
+
+        tarefas_ordenadas = sorted(tarefas, key=lambda t: str(t.id))
+
+        largura = margem_esquerda + max(tempo_maximo, 1) * largura_tick + 60
+        altura = margem_superior + len(tarefas_ordenadas) * altura_linha + 60
+
+        # Cria a imagem e o objeto responsável pelo desenho
+        imagem = Image.new("RGB", (largura, altura), "#202020")
+        desenho = ImageDraw.Draw(imagem)
+
+        # Legenda
+        desenho.text((10, 10), "Grafico de Gantt", fill="white")
+        desenho.text(
+            (10, 30),
+            "Execucao: cor da tarefa | Pronta: P | Bloqueada: X",
+            fill="white"
+        )
+        desenho.text(
+            (10, 50),
+            "Chegada: verde | Conclusao: azul | Prazo perdido: vermelho",
+            fill="white"
+        )
+
+        # Desenha o eixo do tempo
+        for tempo in range(tempo_maximo + 1):
+            x = margem_esquerda + tempo * largura_tick
+
+            desenho.text(
+                (x - 5, margem_superior - 25),
+                str(tempo),
+                fill="white"
+            )
+
+            desenho.line(
+                (x, margem_superior,
+                 x, margem_superior + len(tarefas_ordenadas) * altura_linha),
+                fill="#444444"
+            )
+
+        # Desenha as linhas das tarefas
+        for indice, tarefa in enumerate(tarefas_ordenadas):
+            y = margem_superior + indice * altura_linha
+
+            desenho.text(
+                (10, y + 15),
+                str(tarefa.id),
+                fill="white"
+            )
+
+            desenho.line(
+                (margem_esquerda, y + altura_linha,
+                 margem_esquerda + tempo_maximo * largura_tick,
+                 y + altura_linha),
+                fill="#444444"
+            )
+
+        # Desenha os estados registrados em cada tick
+        for registro in historico:
+            tarefa = next(
+                (t for t in tarefas_ordenadas
+                 if str(t.id) == str(registro["tarefa"])),
+                None
+            )
+
+            if tarefa is None:
+                continue
+
+            indice = tarefas_ordenadas.index(tarefa)
+
+            x1 = margem_esquerda + registro["tempo"] * largura_tick
+            x2 = x1 + largura_tick
+            y1 = margem_superior + indice * altura_linha + 5
+            y2 = y1 + 30
+
+            estado = registro["estado"]
+
+            if estado == "Executando":
+                cor = tarefa.cor
+                if not cor.startswith("#"):
+                    # Aceita nomes de cores e valores hexadecimais
+                    try:
+                        from PIL import ImageColor
+                        ImageColor.getrgb(cor)
+                    except ValueError:
+                        cor = "#" + cor
+
+                try:
+                    desenho.rectangle(
+                        (x1, y1, x2, y2),
+                        fill=cor,
+                        outline="white"
+                    )
+                except ValueError:
+                    desenho.rectangle(
+                        (x1, y1, x2, y2),
+                        fill="#777777",
+                        outline="white"
+                    )
+
+                desenho.text(
+                    (x1 + 10, y1 + 8),
+                    str(registro["cpu"]),
+                    fill="white"
+                )
+
+            elif estado == "Pronta":
+                desenho.rectangle(
+                    (x1, y1, x2, y2),
+                    outline="white",
+                    width=2
+                )
+                desenho.text(
+                    (x1 + 15, y1 + 8),
+                    "P",
+                    fill="white"
+                )
+
+            elif estado == "Bloqueada":
+                desenho.rectangle(
+                    (x1, y1, x2, y2),
+                    fill="#555555",
+                    outline="white"
+                )
+                desenho.line((x1 + 5, y1 + 5, x2 - 5, y2 - 5), fill="white", width=2)
+                desenho.line((x1 + 5, y2 - 5, x2 - 5, y1 + 5), fill="white", width=2)
+
+        # Desenha os eventos
+        for evento in eventos:
+            indice = next(
+                (i for i, t in enumerate(tarefas_ordenadas)
+                 if str(t.id) == str(evento["tarefa"])),
+                None
+            )
+
+            if indice is None:
+                continue
+
+            x = margem_esquerda + evento["tempo"] * largura_tick
+            y = margem_superior + indice * altura_linha + 8
+
+            if evento["tipo"] == "Chegada":
+                desenho.polygon(
+                    [(x, y - 6), (x - 6, y + 4), (x + 6, y + 4)],
+                    fill="#2ECC71"
+                )
+
+            elif evento["tipo"] == "Conclusão":
+                desenho.ellipse(
+                    (x - 5, y - 5, x + 5, y + 5),
+                    fill="#3498DB",
+                    outline="white"
+                )
+
+            elif evento["tipo"] == "Perda de prazo":
+                desenho.line((x - 6, y - 6, x + 6, y + 6), fill="red", width=3)
+                desenho.line((x - 6, y + 6, x + 6, y - 6), fill="red", width=3)
+
+        # Salva o arquivo
+        imagem.save(caminho, format="PNG")
+

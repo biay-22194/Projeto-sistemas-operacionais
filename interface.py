@@ -413,6 +413,38 @@ def start_interface():
             label_status.configure(text="Simulação finalizada!", text_color="#55FF55")
             if execucao_automatica_ativa:
                 alternar_execucao_automatica()
+    
+    def exportar_gantt_png():
+        if simulador is None:
+            mostrar_alerta_erro(
+                app,
+                "Exportação não permitida:\nCarregue e execute uma simulação antes de exportar o gráfico."
+            )
+            return
+        caminho = filedialog.asksaveasfilename(
+            title="Salvar gráfico de Gantt",
+            defaultextension=".png",
+            filetypes=[("Imagem PNG", "*.png")]
+        )
+        if not caminho:
+            return
+        try:
+            grafico_gantt.exportar_png(
+                tarefas=tcbs_do_sistema,
+                historico=simulador.historico,
+                eventos=simulador.eventos_gantt,
+                tempo_maximo=simulador.tempo_global,
+                caminho=caminho
+            )
+            label_status.configure(
+                text=f"Gráfico exportado com sucesso em:\n{caminho}",
+                text_color="#55FF55"
+            )
+        except Exception as e:
+            mostrar_alerta_erro(
+                app,
+                f"Erro ao exportar o gráfico:\n{str(e)}"
+            )
 
     # -------------------------------------------------------------------------
     # LAYOUT DA INTERFACE
@@ -537,6 +569,15 @@ def start_interface():
     
     btn_retroceder = ctk.CTkButton(frame_controle, text="Retroceder Tick", command=retroceder_simulacao, fg_color="#f39c12", hover_color="#d68910")
     btn_retroceder.pack(side="right", padx=10)
+
+    btn_exportar = ctk.CTkButton(
+        frame_controle,
+        text="Exportar Gantt (PNG)",
+        command=exportar_gantt_png,
+        fg_color="#34495e",
+        hover_color="#2c3e50"
+    )
+    btn_exportar.pack(side="right", padx=10)
 
     atualizar_tabela_so()
     atualizar_tabela_tarefas()

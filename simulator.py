@@ -23,7 +23,6 @@ class Simulador:
         self.historico = []               #armazena os estados durante cada tick
         self.eventos_gantt = []           #armazena acontecimentos pontuais
         self.snapshots = [] # Armazena o estado completo de cada tick
-        self.salvar_estado() # Salva o estado inicial (Tick 0)
 
         if qtde_cpus < 1:
             raise ValueError("A quantidade de CPUs deve ser maior que zero.")
@@ -49,6 +48,9 @@ class Simulador:
                 print(f"Aviso: tarefa {tarefa.id} ignorada (aperiódica).")
             elif tarefa.periodo < 0:
                 raise ValueError(f"Período inválido na tarefa {tarefa.id}")
+
+        # Salva o estado inicial (Tick 0)
+        self.salvar_estado()
 
     def ativar_tarefas(self):
         for tarefa in self.tarefas:
